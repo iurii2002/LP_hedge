@@ -9,8 +9,8 @@ from time import sleep
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
 
-from reporting.tg import telegram_bot_sendtext
-from parse_ray import get_price_ftx, calculate_token_amount_in_pool, get_price_ftx_for_order
+from tg.reporting import telegram_bot_sendtext
+from parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, get_price_ftx_for_order
 from rest.client import FtxClient
 
 
@@ -32,7 +32,7 @@ class MyBot(FtxClient):
         self.target = target
         self.rebalance = rebalance
 
-        logging.basicConfig(filename=f"botlog{self.second_token}", level=logging.INFO)
+        logging.basicConfig(filename=f"botlog{self.second_token}.txt", level=logging.INFO)
 
     def update_second_token_pool_data(self):
         self.second_token_price = None
