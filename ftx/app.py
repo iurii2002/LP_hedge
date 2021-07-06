@@ -120,6 +120,9 @@ class MyBot(FtxClient):
                   f'Coverage: {coverage}. Target: {1 + (self.target - self.rebalance)/100} - {1 + (self.target + self.rebalance)/100}'
         telegram_bot_sendtext(message)
 
+    def update_all_user_pools(self):
+        pass
+
 
 # 1. Get Token Amount in Pool
 # 2. Get the short position

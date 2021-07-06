@@ -11,7 +11,7 @@ import re
 import json
 
 from mongo.mongo import update_user_db, check_if_user_exist, delete_user, add_hedge, print_user_position, print_specific_pool, \
-    delete_pool, edit_pool_ib_db
+    delete_pool, edit_pool_in_db, get_user_data
 from telebot import types
 from telebot.types import InlineKeyboardMarkup
 
@@ -23,11 +23,12 @@ user_pool = {}
 
 
 class User:
-    def __init__(self, cid):
+    def __init__(self, cid, status='passive', api_s=None, api_k=None, subaccount=None):
         self.cid = cid
-        self.api_s = None
-        self.api_k = None
-        self.subaccount = None
+        self.status = status
+        self.api_s = api_s
+        self.api_k = api_k
+        self.subaccount = subaccount
 
     def get_data(self):
         text = f"""
@@ -122,7 +123,6 @@ def current_hedge_button(message):
     item1 = types.InlineKeyboardButton("Edit pools", callback_data='edit pools')
     markup.add(item1)
     bot.send_message(cid, print_user_position(cid)[0], reply_markup=markup)
-#     todo add help handler
 
 
 @bot.message_handler(regexp='Add New Hedge')
@@ -138,13 +138,53 @@ def add_new_hedge_button(message):
         bot.send_message(cid, 'Choose the type of pool', reply_markup=markup)
 
 
-@bot.message_handler(regexp='Stop Bot')
+@bot.message_handler(regexp='Start/Stop Bot')
 def stop_bot_button(message):
     cid = message.chat.id
-    if check_if_user_exist(cid) is False:
+    if check_if_user_exist(cid):
+        data = get_user_data(cid)
+        print(data)
+        user = User(cid, status=data['status'], api_s=data['api']['api-secret'], api_k=data['api']['api-key'],
+                    subaccount=data['api']['sub-account'])
+        current_status = user.status
+        user_dict[cid] = user
+        if current_status == 'passive':
+            message = 'Current status: Stopped'
+            item1 = types.InlineKeyboardButton(u'\U00002705' + " Start Bot", callback_data='Start bot')
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            markup.add(item1)
+            bot.send_message(cid, message, reply_markup=markup)
+
+        if current_status == 'active':
+            message = 'Current status: Working'
+            item1 = types.InlineKeyboardButton(u'\U0000274C' + " Stop bot", callback_data='Stop bot')
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            markup.add(item1)
+            bot.send_message(cid, message, reply_markup=markup)
+    else:
         bot.send_message(cid, 'Register user before you can perform this action')
-    bot.send_message(cid, 'Pressed Stop Bot Button')
-#     todo add help handler
+
+
+@bot.callback_query_handler(lambda query: query.data in ["Start bot", "Stop bot"])
+def new_hedge_callback_inline(call):
+    try:
+        if call.message:
+            cid = call.message.chat.id
+            if call.data == 'Start bot':
+                user = user_dict[cid]
+                user.status = 'active'
+                update_user_db(user=user)
+                bot.send_message(cid, 'Bot started')
+                user_dict.pop(cid)
+            if call.data == 'Stop bot':
+                user = user_dict[cid]
+                user.status = 'passive'
+                update_user_db(user=user_dict[cid])
+                user_dict.pop(cid)
+                bot.send_message(cid, 'Bot stopped')
+
+    except Exception as e:
+        print(repr(e))
 
 
 @bot.message_handler(regexp='Help')
@@ -169,10 +209,12 @@ def registration_callback_inline(call):
             elif call.data == 'update account':
                 msg_api_key = bot.send_message(cid, 'Provide your FTX api key :')
                 bot.register_next_step_handler(msg_api_key, registration_step_api_key)
+
             elif call.data == 'delete account':
                 # todo "Are you sure question" and stop bot function and description that bot will stop
                 delete_user(cid)
                 bot.send_message(cid, 'Account deleted!')
+
             elif call.data == 'save account':
                 update_user_db(user=user_dict[cid])
                 bot.send_message(cid, 'Account saved!')
@@ -235,7 +277,7 @@ def new_hedge_callback_inline(call):
                 if user_pool:
                     position = user_position[cid]
                     pool = list(user_pool.keys())[0]
-                    edit_pool_ib_db(cid, pool, position)
+                    edit_pool_in_db(cid, pool, position)
                     user_pool.pop(pool)
                     bot.send_message(cid, 'Pool updated')
                 else:

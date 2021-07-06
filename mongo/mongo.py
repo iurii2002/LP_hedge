@@ -7,7 +7,8 @@ myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["farm_hedge"]
 
 col_users = mydb["users"]
-# user collection scheme = {"cid": 47805431514, "api": {"api-key": "text", "api-secret": "text", "sub-account": "text"}}
+# user collection scheme = {"cid": 47805431514, "status": "active/passive",
+#                           "api": {"api-key": "text", "api-secret": "text", "sub-account": "text"}}
 
 col_position = mydb["user position"]
 # postision scheme = {"cid": 47805431514,
@@ -27,19 +28,20 @@ def check_if_user_exist(cid: str):
 
 
 def add_user(user) -> None:
-    new_user = {"cid": user.cid,
+    new_user = {"cid": user.cid, "status": user.status,
                 "api": {"api-key": user.api_k, "api-secret": user.api_s, "sub-account": user.subaccount}}
     col_users.insert_one(new_user)
 
 
 def update_user(user, old_user) -> None:
     col_users.delete_one(old_user)
-    new_user = {"cid": user.cid,
+    new_user = {"cid": user.cid, "status": user.status,
                 "api": {"api-key": user.api_k, "api-secret": user.api_s, "sub-account": user.subaccount}}
     col_users.insert_one(new_user)
 
 
 def update_user_db(user) -> None:
+    print(user)
     if check_if_user_exist(user.cid):
         old_user = col_users.find_one({"cid": user.cid})
         update_user(user, old_user)
@@ -48,14 +50,15 @@ def update_user_db(user) -> None:
 
 
 def get_user_data(cid: str) -> Dict:
-    result = col_users.find({"cid": cid})
+    result = col_users.find_one({"cid": cid})
     return result
 
 
 def get_all_users_data() -> List[Dict]:
+    users = []
     for x in col_users.find():
-        print(x)
-#     todo think if we need this info
+        users.append(x)
+    return users
 
 
 def delete_user(cid: str):
@@ -155,7 +158,7 @@ def update_position_pivot_data(cid):
     col_position.update_one(data, newvalues)
 
 
-def edit_pool_ib_db(cid: str, pool_nb: int, pool):
+def edit_pool_in_db(cid: str, pool_nb: int, pool):
     user_position_old = get_user_position(cid)
     pool_data = user_position_old["pools"][pool_nb - 1]
     new_pool = {
