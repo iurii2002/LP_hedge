@@ -8,9 +8,10 @@ import telebot
 import config
 import random
 import re
+import json
 
-from mongo import update_user_db, check_if_user_exist, delete_user, add_hedge, print_user_position, print_specific_pool, \
-    delete_pool
+from mongo.mongo import update_user_db, check_if_user_exist, delete_user, add_hedge, print_user_position, print_specific_pool, \
+    delete_pool, edit_pool_ib_db
 from telebot import types
 from telebot.types import InlineKeyboardMarkup
 
@@ -231,8 +232,15 @@ def new_hedge_callback_inline(call):
                 # bot.register_next_step_handler(msg_first_coin, new_double_hedge_step_coin_one)
 
             elif call.data == 'save hedge':
-                add_hedge(position=user_position[cid])
-                bot.send_message(cid, 'Hedge added')
+                if user_pool:
+                    position = user_position[cid]
+                    pool = list(user_pool.keys())[0]
+                    edit_pool_ib_db(cid, pool, position)
+                    user_pool.pop(pool)
+                    bot.send_message(cid, 'Pool updated')
+                else:
+                    add_hedge(position=user_position[cid])
+                    bot.send_message(cid, 'Hedge added')
                 user_position.pop(cid)
 
     except Exception as e:
@@ -245,36 +253,33 @@ def edit_pools_callback_inline(call, message=None):
         if call.message:
             cid = call.message.chat.id
             if call.data == 'edit pools':
-                # markup = types.InlineKeyboardMarkup()
-                # pools_amount = print_user_position(cid)[1]
-                # for i in range(1, pools_amount):
-                #     markup.add(types.InlineKeyboardButton(i, callback_data='edit pool'))
-                #
-                # markup.row_width = 8
-
                 msg_edit_pool = bot.send_message(cid, 'What pool to edit :')
-                bot.register_next_step_handler(msg_edit_pool, edit_pool)
+                bot.register_next_step_handler(msg_edit_pool, edit_pool_step)
 
             elif call.data == 'delete pool':
                 pool = list(user_pool.keys())[0]
                 delete_pool(cid, pool)
                 user_pool.pop(pool)
-                bot.send_message(cid, 'delete pool')
+                bot.send_message(cid, f'Pool {pool} has been deleted!')
 
             elif call.data == 'edit pool':
-                bot.send_message(cid, 'edit pool')
-            #     msg_edit_pool = bot.send_message(cid, 'Choose pool to edit:', reply_markup=markup)
-            #     bot.register_next_step_handler(msg_edit_pool, edit_pool)
+                pool = list(user_pool.keys())[0]
+                position = Position(cid)
+                position.coin_one = list(user_pool[pool]['tokens'].keys())[0]
+                position.coin_two = list(user_pool[pool]['tokens'].keys())[1]
+                user_position[cid] = position
+                msg_edit_pool = bot.send_message(cid, f'Amount of the {position.coin_one} in pool:')
+                bot.register_next_step_handler(msg_edit_pool, new_hedge_step_amount_coin_one)
 
     except Exception as e:
         print(repr(e))
 
 
-def edit_pool(message):
+def edit_pool_step(message):
     cid = message.chat.id
-    pool = int(message.text)
-    result = print_specific_pool(cid, pool)
-    user_pool[pool] = result
+    pool_number = int(message.text)
+    result = print_specific_pool(cid, pool_number)
+    user_pool[pool_number] = json.loads(result)
 
     item1 = types.InlineKeyboardButton("Edit", callback_data='edit pool')
     item2 = types.InlineKeyboardButton("Delete", callback_data='delete pool')

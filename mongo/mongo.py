@@ -99,8 +99,8 @@ def print_specific_pool(cid: str, pool: int):
 
 
 def delete_pool(cid: str, pool: int):
-    pool_data = get_user_position(cid)["pools"][pool - 1]
     user_position_old = get_user_position(cid)
+    pool_data = user_position_old["pools"][pool - 1]
     user_position_new = copy.deepcopy(user_position_old)
     user_position_new['pools'].remove(pool_data)
 
@@ -108,7 +108,7 @@ def delete_pool(cid: str, pool: int):
 
     col_position.update_one(user_position_old, newvalues)
 
-    update_positions(cid)
+    update_position_pivot_data(cid)
 
 
 def add_hedge(position) -> None:
@@ -123,7 +123,7 @@ def add_hedge(position) -> None:
         new_user_data['pools'].append(new_pool)
         newvalues = {"$set": new_user_data}
         col_position.update_one(user_data, newvalues)
-        update_positions(position.cid)
+        update_position_pivot_data(position.cid)
     else:
         new_position = {"cid": position.cid,
                         "position": {},
@@ -133,11 +133,12 @@ def add_hedge(position) -> None:
                         }, "target": position.target, "fluctuation": position.fluctuation}]
                         }
         col_position.insert_one(new_position)
-        update_positions(position.cid)
+        update_position_pivot_data(position.cid)
     print(get_user_position(position.cid))
 
 
-def update_positions(cid):
+def update_position_pivot_data(cid):
+    # This data will be updated based on the new pools -> "position": {"FTM": 3550, "ETH": 1}
     data = get_user_position(cid)
     new_data = copy.deepcopy(data)
     new_data['position'] = {}
@@ -153,3 +154,21 @@ def update_positions(cid):
     newvalues = {"$set": new_data}
     col_position.update_one(data, newvalues)
 
+
+def edit_pool_ib_db(cid: str, pool_nb: int, pool):
+    user_position_old = get_user_position(cid)
+    pool_data = user_position_old["pools"][pool_nb - 1]
+    new_pool = {
+        'pool': 'single', 'tokens':
+            {pool.coin_one: pool.coin_one_amount, pool.coin_two: pool.coin_two_amount},
+        'target': pool.target, 'fluctuation': pool.fluctuation
+    }
+    user_position_new = copy.deepcopy(user_position_old)
+    user_position_new['pools'].remove(pool_data)
+    user_position_new['pools'].append(new_pool)
+
+    newvalues = {"$set": user_position_new}
+
+    col_position.update_one(user_position_old, newvalues)
+
+    update_position_pivot_data(cid)
