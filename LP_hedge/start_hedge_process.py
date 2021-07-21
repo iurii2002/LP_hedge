@@ -2,7 +2,7 @@ import sys
 import logging
 import time
 
-from ftx.app import MyBot
+from LP_hedge.ftx.app import MyBot
 
 
 api_key = sys.argv[1]

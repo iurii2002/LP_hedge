@@ -41,13 +41,29 @@ def get_price_ftx_for_order(coin):
         print('Something went wrong', err)
 
 
-def get_middle_price_for_futures_order(token):
+def get_middle_price_for_futures_order(coin):
     middle_price = None
     while middle_price is None:
         try:
-            bid, ask = get_price_ftx_for_order(token)
+            bid, ask = get_price_ftx_for_order(coin)
             middle_price = (bid + ask) / 2
         except Exception as err:
             print(err)
             pass
     return middle_price
+
+
+def check_if_perp_market_on_ftx(coin) -> bool:
+    market = f'{coin}-PERP'
+    url = f'https://ftx.com/api/markets/{market}'
+    try:
+        response = requests.get(url).json()
+        if response['success']:
+            return True
+        else:
+            if response['error'][:15] == "No such market:":
+                return False
+            else:
+                return check_if_perp_market_on_ftx(coin)
+    except Exception as err:
+        print('Something went wrong', err)

@@ -12,10 +12,10 @@ import time
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
 
-from mongo.mongo_db import get_user_pivot_position
-from tg.reporting import telegram_bot_sendtext
-from ftx.parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, get_price_ftx_for_order, get_middle_price_for_futures_order
-from ftx.rest.client import FtxClient
+from LP_hedge.mongo.mongo_db import get_user_pivot_position
+from LP_hedge.tg.reporting import telegram_bot_sendtext
+from LP_hedge.ftx.parse_ftx_data import get_middle_price_for_futures_order
+from LP_hedge.ftx.rest.client import FtxClient
 
 
 class MyBot(FtxClient):
@@ -91,7 +91,6 @@ class MyBot(FtxClient):
 
         self.short_positions = self.update_short_position()
         self.create_log('rebalance position', side=side, filled_size=filled_size, token=token)
-        # todo update only if order executed
 
     def prepare_order(self, side, size, future_market, price):
         if self.liquidation_soon():

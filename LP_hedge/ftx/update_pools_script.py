@@ -1,7 +1,7 @@
 import copy
 
-from mongo.mongo_db import get_all_users_data, get_user_position, update_all_pools_in_db
-from ftx.parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, calculate_token_amount_in_double_pool
+from LP_hedge.mongo.mongo_db import get_all_users_data, get_user_position, update_all_pools_in_db
+from LP_hedge.ftx.parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, calculate_token_amount_in_double_pool
 
 
 token_prices = {}

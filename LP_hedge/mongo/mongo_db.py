@@ -17,8 +17,7 @@ col_position = mydb["user position"]
 # "position": {"FTM": 3550, "ETH": 1},
 # "pools":
 # [{"pool": "single", "tokens": {"FTM" : 2550, "USD": 1000}, "target": 1.15, "fluctuation": 10},
-# {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, "target": 1.15, "fluctuation": 10}]}
-# todo target 1 and target 2??
+# {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}}
 
 
 def check_if_user_exist(cid: str):
@@ -30,21 +29,21 @@ def check_if_user_exist(cid: str):
 
 
 def add_user(user) -> None:
-    new_user = {"cid": user.cid, "status": user.status,
-                "api": {"api-key": user.api_k, "api-secret": user.api_s, "sub-account": user.subaccount}}
+    new_user = {"cid": user.get_cid(), "status": user.get_status(),
+                "api": {"api-key": user.get_api_k(), "api-secret": user.get_api_s(), "sub-account": user.get_subaccount()}}
     col_users.insert_one(new_user)
 
 
 def update_user(user, old_user) -> None:
     col_users.delete_one(old_user)
-    new_user = {"cid": user.cid, "status": user.status,
-                "api": {"api-key": user.api_k, "api-secret": user.api_s, "sub-account": user.subaccount}}
+    new_user = {"cid": user.get_cid(), "status": user.get_status(),
+                "api": {"api-key": user.get_api_k(), "api-secret": user.get_api_s(), "sub-account": user.get_subaccount()}}
     col_users.insert_one(new_user)
 
 
 def update_user_db(user) -> None:
-    if check_if_user_exist(user.cid):
-        old_user = col_users.find_one({"cid": user.cid})
+    if check_if_user_exist(user.get_cid()):
+        old_user = col_users.find_one({"cid": user.get_cid()})
         update_user(user, old_user)
     else:
         add_user(user)
@@ -84,18 +83,20 @@ def get_user_pivot_position(cid: str):
         return {}
 
 
-def print_user_position(cid: str) -> (str, tuple):
+def print_user_position(cid: str) -> (str, int):
+    number_of_pools = 0
+
     user_data = get_user_position(cid)
     if user_data == {}:
-        return "", 0
+        return "", number_of_pools
 
     user_position = ''
     for coin, position in user_data['position'].items():
         user_position += f"{coin}: {position};  \n"
 
     pools = ""
-    number_of_pools = 1
     for pool in user_data['pools']:
+        number_of_pools += 1
         coin_one = list(pool['tokens'].keys())[0]
         coin_two = list(pool['tokens'].keys())[1]
         if pool['pool'] == 'single':
@@ -107,7 +108,6 @@ def print_user_position(cid: str) -> (str, tuple):
                    f'Target {coin_one}: ' + str(pool['target'][0]) + "%" + ' +- ' + str(pool['fluctuation'][0]) + "%\n" + \
                    f'Target {coin_two}: ' + str(pool['target'][1]) + "%" + ' +- ' + str(pool['fluctuation'][1]) + "%\n\n"
             pools += text
-        number_of_pools += 1
     message = f"""
 Total in pools: 
 {user_position}
@@ -118,12 +118,10 @@ Pools:
     return message, number_of_pools
 
 
-def print_specific_pool(cid: str, pool: int):
+def return_specific_pool_data(cid: str, pool: int) -> (str, str):
     pool = get_user_position(cid)["pools"][pool - 1]
     pool_data = json.dumps(pool)
-    print(pool)
-    coin_one = list(pool['tokens'].keys())[0]
-    coin_two = list(pool['tokens'].keys())[1]
+    coin_one, coin_two = list(pool['tokens'].keys())[0], list(pool['tokens'].keys())[1]
 
     text = ''
     if pool['pool'] == 'single':
@@ -134,7 +132,6 @@ def print_specific_pool(cid: str, pool: int):
                f'Target {coin_one}: ' + str(pool['target'][0]) + "%" + ' +- ' + str(pool['fluctuation'][0]) + "%\n" + \
                f'Target {coin_two}: ' + str(pool['target'][1]) + "%" + ' +- ' + str(pool['fluctuation'][1]) + "%\n\n"
 
-    # pool_data get_user_position(cid)["pools"][pool - 1])
     return text, pool_data
 
 

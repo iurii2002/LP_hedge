@@ -1,8 +1,10 @@
 # from tg.tg_bot import start_bot
-from mongo.mongo_db import get_all_users_data
+# todo structure https://docs.python-guide.org/writing/structure/
+# better this structure https://dev.to/codemouse92/dead-simple-python-project-structure-and-imports-38c6
+
+from LP_hedge.mongo.mongo_db import get_all_users_data
 
 import subprocess
-import time
 
 run_subprocess = []
 # run_subprocess[0].terminate() to kill the process
