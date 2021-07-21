@@ -1,12 +1,10 @@
-# todo if input is not finished than tg bot crases
-
 import telebot
 import json
 from telebot import types
 
 from LP_hedge.tg.config_tg import TOKEN
 from LP_hedge.tg.instances import User, Position
-from LP_hedge.mongo.mongo_db import update_user_db, check_if_user_exist, delete_user, add_hedge, print_user_position, \
+from LP_hedge.mongo.mongo_db import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
     return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
 from LP_hedge.ftx.parse_ftx_data import check_if_perp_market_on_ftx
 
@@ -42,7 +40,7 @@ def welcome(message):
 def total_data_button(message) -> None:
     cid = message.chat.id
 
-    if check_if_user_exist(cid) is False:
+    if not check_if_user_exist_in_db(cid):
         bot.send_message(cid, 'Register user before you can perform this action')
         return
 
@@ -55,7 +53,7 @@ def total_data_button(message) -> None:
 @bot.message_handler(regexp='🐋 Account')
 def account_button(message) -> None:
     cid = message.chat.id
-    if user_data := check_if_user_exist(cid):
+    if user_data := check_if_user_exist_in_db(cid):
         """Update existing user"""
         user = User(cid, api_s=user_data["api"]["api-secret"], api_k=user_data["api"]["api-key"],
                     subaccount=user_data["api"]["sub-account"])
@@ -78,7 +76,7 @@ def account_button(message) -> None:
 def current_hedge_button(message) -> None:
     cid = message.chat.id
 
-    if check_if_user_exist(cid) is False:
+    if not check_if_user_exist_in_db(cid):
         bot.send_message(cid, 'Register user before you can perform this action')
         return
 
@@ -103,7 +101,7 @@ def current_hedge_button(message) -> None:
 def add_new_hedge_button(message) -> None:
     cid = message.chat.id
 
-    if check_if_user_exist(cid) is False:
+    if not check_if_user_exist_in_db(cid):
         bot.send_message(cid, 'Register user before you can perform this action')
         return
 
@@ -118,7 +116,7 @@ def add_new_hedge_button(message) -> None:
 def stop_bot_button(message) -> None:
     cid = message.chat.id
 
-    if check_if_user_exist(cid) is False:
+    if not check_if_user_exist_in_db(cid):
         bot.send_message(cid, 'Register user before you can perform this action')
         return
 

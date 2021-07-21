@@ -1,26 +1,34 @@
 import pymongo
 import copy
 import json
-from typing import DefaultDict, Deque, List, Dict, Tuple, Optional, ClassVar
+from typing import List, Dict
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["farm_hedge"]
 
 col_users = mydb["users"]
-# user collection scheme = {"cid": 47805431514, "status": "active/passive",
-#                           "api": {"api-key": "text", "api-secret": "text", "sub-account": "text"}}
+"""
+    user collection scheme = {
+        "cid": 47805431514, "status": "active/passive",
+        "api": {"api-key": "text", "api-secret": "text", "sub-account": "text"}
+        }
+"""
+
 
 col_position = mydb["user position"]
 
+"""
+    position scheme = {
+        "cid": 47805431514,
+        "position": {"FTM": 3550, "ETH": 1},
+        "pools":
+        [{"pool": "single", "tokens": {"FTM" : 2550, "USD": 1000}, "target": 1.15, "fluctuation": 10},
+        {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
+        }
+"""
 
-# postision scheme = {"cid": 47805431514,
-# "position": {"FTM": 3550, "ETH": 1},
-# "pools":
-# [{"pool": "single", "tokens": {"FTM" : 2550, "USD": 1000}, "target": 1.15, "fluctuation": 10},
-# {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}}
 
-
-def check_if_user_exist(cid: str):
+def check_if_user_exist_in_db(cid: str) -> bool:
     myquery = {"cid": cid}
     if col_users.find_one(myquery) is not None:
         return col_users.find_one(myquery)
@@ -42,7 +50,7 @@ def update_user(user, old_user) -> None:
 
 
 def update_user_db(user) -> None:
-    if check_if_user_exist(user.get_cid()):
+    if check_if_user_exist_in_db(user.get_cid()):
         old_user = col_users.find_one({"cid": user.get_cid()})
         update_user(user, old_user)
     else:
@@ -61,13 +69,13 @@ def get_all_users_data() -> List[Dict]:
     return users
 
 
-def delete_user(cid: str):
-    if check_if_user_exist(cid):
+def delete_user(cid: str) -> None:
+    if check_if_user_exist_in_db(cid):
         user = col_users.find_one({"cid": cid})
         col_users.delete_one(user)
 
 
-def get_user_position(cid: str):
+def get_user_position(cid: str) -> Dict:
     myquery = {"cid": cid}
     if col_position.find_one(myquery) is not None:
         return col_position.find_one(myquery)
@@ -75,7 +83,7 @@ def get_user_position(cid: str):
         return {}
 
 
-def get_user_pivot_position(cid: str):
+def get_user_pivot_position(cid: str) -> Dict:
     full_position = get_user_position(cid)
     if full_position:
         return full_position['position']
@@ -135,7 +143,7 @@ def return_specific_pool_data(cid: str, pool: int) -> (str, str):
     return text, pool_data
 
 
-def delete_pool(cid: str, pool: int):
+def delete_pool(cid: str, pool: int) -> None:
     user_position_old = get_user_position(cid)
     pool_data = user_position_old["pools"][pool - 1]
     user_position_new = copy.deepcopy(user_position_old)
@@ -153,10 +161,14 @@ def add_hedge(position) -> None:
     pool = 'single' if position.coin_two == 'USD' else 'double'
 
     if pool == 'single':
-
-        # {'pool': 'single', 'tokens': {'STEP': 4500.0, 'USD': 1150.0}, 'target': 120.0, 'fluctuation': 15}
+        """
+        pool schema:
+        {'pool': 'single', 'tokens': {'STEP': 4500.0, 'USD': 1150.0}, 'target': 120.0, 'fluctuation': 15}
+        """
         if len(get_user_position(position.cid)) > 0:
-            # update hedge
+            """
+            update hedge
+            """
             new_pool = {"pool": pool, "tokens": {
                 position.coin_one: position.coin_one_amount,
                 position.coin_two: position.coin_two_amount
@@ -168,7 +180,9 @@ def add_hedge(position) -> None:
             col_position.update_one(user_data, newvalues)
             update_position_pivot_data(position.cid)
         else:
-            # add new hedge
+            """
+            add new hedge
+            """
             new_position = {"cid": position.cid,
                             "position": {},
                             "pools": [{"pool": pool, "tokens": {
@@ -179,9 +193,14 @@ def add_hedge(position) -> None:
             col_position.insert_one(new_position)
             update_position_pivot_data(position.cid)
     elif pool == 'double':
-        # {'pool': 'double', 'tokens': {'FTM': '5000', 'ETH': '1'}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
+        """
+        pool schema:
+        {'pool': 'double', 'tokens': {'FTM': '5000', 'ETH': '1'}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
+        """
         if len(get_user_position(position.cid)) > 0:
-            # update hedge
+            """
+            update hedge
+            """
             new_pool = {"pool": pool, "tokens": {
                 position.coin_one: position.coin_one_amount,
                 position.coin_two: position.coin_two_amount
@@ -196,7 +215,9 @@ def add_hedge(position) -> None:
             update_position_pivot_data(position.cid)
 
         else:
-            # add new hedge
+            """
+            add new hedge
+            """
             new_position = {"cid": position.cid,
                             "position": {},
                             "pools": [{"pool": pool, "tokens": {
@@ -208,11 +229,13 @@ def add_hedge(position) -> None:
             col_position.insert_one(new_position)
             update_position_pivot_data(position.cid)
 
-    print(get_user_position(position.cid))
 
-
-def update_position_pivot_data(cid):
-    # This data will be updated based on the new pools -> "position": {'STEP': {'amount': 4456.39, 'floor': -401.0751, 'ceiling': 490.2029}, 'BNB': {'amount': 21.509999999999998, 'floor': 7.528499999999999, 'ceiling
+def update_position_pivot_data(cid: str) -> None:
+    """
+    This data will be updated based on the new pools -> "position":
+        {'STEP': {'amount': 4456.39, 'floor': -401.0751, 'ceiling': 490.2029},
+        'BNB': {'amount': 21.509999999999998, 'floor': 7.528499999999999, 'ceiling......}
+    """
     data = get_user_position(cid)
     new_data = copy.deepcopy(data)
     new_data['position'] = {}
@@ -268,7 +291,6 @@ def update_position_pivot_data(cid):
                     continue
 
                 else:
-                    # amount = float(amount)
                     floor = amount * (pool['target'][count] - pool['fluctuation'][count]) / 100
                     ceiling = amount * (pool['target'][count] + pool['fluctuation'][count]) / 100
                     details = {'amount': round(amount, 2),
@@ -280,7 +302,7 @@ def update_position_pivot_data(cid):
     col_position.update_one(data, newvalues)
 
 
-def edit_pool_in_db(cid: str, pool_nb: int, pool):
+def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
     user_position_old = get_user_position(cid)
     pool_data = user_position_old["pools"][pool_nb - 1]
     if pool_data['pool'] == 'single':
@@ -315,7 +337,7 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool):
     update_position_pivot_data(cid)
 
 
-def update_all_pools_in_db(cid: str, old_position, new_position):
+def update_all_pools_in_db(cid: str, old_position, new_position) -> None:
     newvalues = {"$set": new_position}
     col_position.update_one(old_position, newvalues)
 

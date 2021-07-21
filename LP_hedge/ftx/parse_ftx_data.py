@@ -1,8 +1,7 @@
 import requests
 
 
-def get_price_ftx(coin):
-    # print(coin)
+def get_price_ftx(coin: str) -> float:
     market = f'{coin}-PERP'
     url = f'https://ftx.com/api/markets/{market}'
     try:
@@ -12,24 +11,28 @@ def get_price_ftx(coin):
         print('Something went wrong', err)
 
 
-def calculate_token_amount_in_pool(product, price):
-    # AMM_formula for USDC/Token pool
-    # Token = Constant product / token price ^ ( 1 / 2 )
-    # USDC = token * token price
+def calculate_token_amount_in_pool(product: float, price: float) -> float:
+    """
+    AMM_formula for USDC/Token pool
+    Token = Constant product / token price ^ ( 1 / 2 )
+    USDC = token * token price
+    """
     amount = (product / price) ** (1 / 2)
     return amount
 
 
-def calculate_token_amount_in_double_pool(product, price1, price2):
-    # AMM_formula for token/Token pool
-    # Token1 amount = (Constant product * token2 price / token1 price) ^ ( 1 / 2 )
-    # Token2 amount = (Constant product * token1 price / token2 price) ^ ( 1 / 2 )
+def calculate_token_amount_in_double_pool(product: float, price1: float, price2: float) -> (float, float):
+    """
+    AMM_formula for Token/Token pool
+    Token1 amount = (Constant product * token2 price / token1 price) ^ ( 1 / 2 )
+    Token2 amount = (Constant product * token1 price / token2 price) ^ ( 1 / 2 )
+    """
     token1_amount = (product * price2 / price1) ** (1 / 2)
     token2_amount = (product * price1 / price2) ** (1 / 2)
     return token1_amount, token2_amount
 
 
-def get_price_ftx_for_order(coin):
+def get_price_ftx_for_order(coin: str) -> (float, float):
     market = f'{coin}-PERP'
     url = f'https://ftx.com/api/markets/{market}'
     try:
@@ -41,7 +44,7 @@ def get_price_ftx_for_order(coin):
         print('Something went wrong', err)
 
 
-def get_middle_price_for_futures_order(coin):
+def get_middle_price_for_futures_order(coin: str) -> float:
     middle_price = None
     while middle_price is None:
         try:
@@ -53,7 +56,7 @@ def get_middle_price_for_futures_order(coin):
     return middle_price
 
 
-def check_if_perp_market_on_ftx(coin) -> bool:
+def check_if_perp_market_on_ftx(coin: str) -> bool:
     market = f'{coin}-PERP'
     url = f'https://ftx.com/api/markets/{market}'
     try:

@@ -7,7 +7,7 @@ from LP_hedge.ftx.parse_ftx_data import get_price_ftx, calculate_token_amount_in
 token_prices = {}
 
 
-def update_all_user_pools():
+def update_all_user_pools() -> None:
     users = get_all_users_data()
     for user in users:
         cid = user['cid']
@@ -26,7 +26,7 @@ def update_all_user_pools():
             new_data['pools'] = new_pools
             update_all_pools_in_db(cid, data, new_data)
         else:
-            # don't need this for non-active users
+            """don't need this for non-active users"""
             continue
 
 
@@ -91,5 +91,3 @@ def update_double_pool(pool):
                     'target': pool['target'], 'fluctuation': pool['fluctuation']}
 
     return updated_pool
-
-
