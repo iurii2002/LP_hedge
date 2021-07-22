@@ -51,7 +51,7 @@ def get_middle_price_for_futures_order(coin: str) -> float:
             bid, ask = get_price_ftx_for_order(coin)
             middle_price = (bid + ask) / 2
         except Exception as err:
-            print(err)
+            print('Something went wrong', err)
             pass
     return middle_price
 

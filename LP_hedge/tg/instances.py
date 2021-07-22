@@ -100,8 +100,29 @@ Target {self.coin_two} : {self.coin_two_target}% +- {self.coin_two_fluctuation}%
     def set_coin_two_fluctuation(self, number: int) -> None:
         self.coin_two_fluctuation = number
 
+    def get_cid(self) -> int:
+        return self.cid
+
     def get_coin_one(self) -> str:
         return self.coin_one
 
     def get_coin_two(self) -> str:
         return self.coin_two
+
+    def get_coin_one_amount(self) -> str:
+        return self.coin_one_amount
+
+    def get_coin_two_amount(self) -> str:
+        return self.coin_two_amount
+
+    def get_coin_one_target(self) -> str:
+        return self.coin_one_target
+
+    def get_coin_two_target(self) -> str:
+        return self.coin_two_target
+
+    def get_coin_one_fluctuation(self) -> str:
+        return self.coin_one_fluctuation
+
+    def get_coin_two_fluctuation(self) -> str:
+        return self.coin_two_fluctuation

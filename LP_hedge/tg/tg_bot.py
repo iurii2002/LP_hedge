@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import telebot
 import json
 from telebot import types
@@ -6,7 +8,7 @@ from LP_hedge.tg.config_tg import TOKEN
 from LP_hedge.tg.instances import User, Position
 from LP_hedge.mongo.mongo_db import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
     return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
-from LP_hedge.ftx.parse_ftx_data import check_if_perp_market_on_ftx
+from LP_hedge.scripts.parse_ftx_data import check_if_perp_market_on_ftx
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -239,7 +241,6 @@ def registration_step_subaccount(message) -> None:
     bot.send_message(cid, user.print_user_data(), reply_markup=markup)
 
 
-# @bot.callback_query_handler(func=lambda call: True)
 @bot.callback_query_handler(lambda query: query.data in ["single LP", "double LP", "save hedge"])
 def new_hedge_callback_inline(call) -> None:
     try:
@@ -260,12 +261,13 @@ def new_hedge_callback_inline(call) -> None:
             elif call.data == 'save hedge':
                 if user_pool_temp:
                     position = user_position_temp[cid]
-                    pool = list(user_pool_temp[cid].keys())[0]
-                    edit_pool_in_db(cid, pool, position)
+                    pool_number = list(user_pool_temp[cid].keys())[0]
+                    edit_pool_in_db(cid, pool_number, position)
                     user_pool_temp.pop(cid)
                     bot.send_message(cid, 'Pool updated')
                 else:
-                    add_hedge(position=user_position_temp[cid])
+                    position = user_position_temp[cid]
+                    add_hedge(position=position)
                     bot.send_message(cid, 'Hedge added')
                 user_position_temp.pop(cid)
 
@@ -351,7 +353,11 @@ def new_double_hedge_step_coin_two(message) -> None:
     position = user_position_temp[cid]
     user_input = message.text.upper()
     if not check_if_perp_market_on_ftx(user_input):
-        error_msg = bot.send_message(cid, f'There is no {user_input} perp market on FTX. Please use another one.')
+        error_msg = bot.send_message(cid, f'There is no {user_input} perp market on FTX. Please use another one. Please use another one.')
+        bot.register_next_step_handler(error_msg, new_double_hedge_step_coin_two)
+        return
+    if user_input == position.get_coin_one():
+        error_msg = bot.send_message(cid, f'Coin two should be different from the coin one.')
         bot.register_next_step_handler(error_msg, new_double_hedge_step_coin_two)
         return
     position.set_coin_two(user_input)
@@ -441,7 +447,7 @@ def new_double_hedge_step_target_two(message) -> None:
         bot.register_next_step_handler(error_msg, new_double_hedge_step_target_two)
         return
     position.set_coin_two_target(amount)
-    msg_fluctuation_position_coin_two = bot.send_message(cid, f'What fluctuation for {position.get_coin_one()}, in %?')
+    msg_fluctuation_position_coin_two = bot.send_message(cid, f'What fluctuation for {position.get_coin_two()}, in %?')
     bot.register_next_step_handler(msg_fluctuation_position_coin_two, new_double_hedge_step_fluctuation_two)
 
 
@@ -563,6 +569,3 @@ def check_coma_in_number(number: str) -> str:
 # RUN
 def start_bot() -> None:
     bot.polling(none_stop=True)
-
-
-start_bot()

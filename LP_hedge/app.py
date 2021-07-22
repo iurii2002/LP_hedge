@@ -14,8 +14,8 @@ sys.path.append(BASE_PATH)
 
 from LP_hedge.mongo.mongo_db import get_user_pivot_position
 from LP_hedge.tg.reporting import telegram_bot_sendtext
-from LP_hedge.ftx.parse_ftx_data import get_middle_price_for_futures_order
-from LP_hedge.ftx.rest.client import FtxClient
+from LP_hedge.scripts.parse_ftx_data import get_middle_price_for_futures_order
+from LP_hedge.ftx.rest_client import FtxClient
 
 
 class MyBot(FtxClient):

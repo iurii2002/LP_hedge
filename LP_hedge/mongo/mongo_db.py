@@ -105,8 +105,7 @@ def print_user_position(cid: str) -> (str, int):
     pools = ""
     for pool in user_data['pools']:
         number_of_pools += 1
-        coin_one = list(pool['tokens'].keys())[0]
-        coin_two = list(pool['tokens'].keys())[1]
+        coin_one, coin_two = list(pool['tokens'].keys())[0], list(pool['tokens'].keys())[1]
         if pool['pool'] == 'single':
             text = str(number_of_pools) + '.  ' + json.dumps(pool['tokens']).ljust(40) + "\n" + \
                    f'Target {coin_one}: ' + str(pool['target']) + "%" + ' +- ' + str(pool['fluctuation']) + "%\n\n"
@@ -158,7 +157,7 @@ def delete_pool(cid: str, pool: int) -> None:
 
 def add_hedge(position) -> None:
 
-    pool = 'single' if position.coin_two == 'USD' else 'double'
+    pool = 'single' if position.get_coin_two() == 'USD' else 'double'
 
     if pool == 'single':
         """
@@ -202,17 +201,17 @@ def add_hedge(position) -> None:
             update hedge
             """
             new_pool = {"pool": pool, "tokens": {
-                position.coin_one: position.coin_one_amount,
-                position.coin_two: position.coin_two_amount
-            }, "target": [position.coin_one_target, position.coin_two_target],
-                        "fluctuation": [position.coin_one_fluctuation, position.coin_two_fluctuation]}
+                position.get_coin_one(): position.get_coin_one_amount(),
+                position.get_coin_two(): position.get_coin_two_amount()
+            }, "target": [position.get_coin_one_target(), position.get_coin_two_target()],
+                        "fluctuation": [position.get_coin_one_fluctuation(), position.get_coin_two_fluctuation()]}
             user_data = get_user_position(position.cid)
             new_user_data = copy.deepcopy(user_data)
             new_user_data['pools'].append(new_pool)
             newvalues = {"$set": new_user_data}
             col_position.update_one(user_data, newvalues)
 
-            update_position_pivot_data(position.cid)
+            update_position_pivot_data(position.get_cid())
 
         else:
             """
@@ -221,13 +220,13 @@ def add_hedge(position) -> None:
             new_position = {"cid": position.cid,
                             "position": {},
                             "pools": [{"pool": pool, "tokens": {
-                                position.coin_one: position.coin_one_amount,
-                                position.coin_two: position.coin_two_amount
-                            }, "target": [position.coin_one_target, position.coin_two_target],
-                                       "fluctuation": [position.coin_one_fluctuation, position.coin_two_fluctuation]}]
+                                position.get_coin_one(): position.get_coin_one_amount(),
+                                position.get_coin_two(): position.get_coin_two_amount()
+                            }, "target": [position.get_coin_one_target(), position.get_coin_two_target()],
+                                       "fluctuation": [position.get_coin_one_fluctuation(), position.get_coin_two_fluctuation()]}]
                             }
             col_position.insert_one(new_position)
-            update_position_pivot_data(position.cid)
+            update_position_pivot_data(position.get_cid())
 
 
 def update_position_pivot_data(cid: str) -> None:
@@ -308,8 +307,8 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
     if pool_data['pool'] == 'single':
         new_pool = {
             'pool': 'single', 'tokens':
-                {pool.coin_one: pool.coin_one_amount, pool.coin_two: pool.coin_two_amount},
-            'target': pool.coin_one_target, 'fluctuation': pool.coin_one_fluctuation
+                {pool.get_coin_one(): pool.get_coin_one_amount(), pool.get_coin_two(): pool.get_coin_two_amount()},
+            'target': pool.get_coin_one_target(), 'fluctuation': pool.get_coin_one_fluctuation()
         }
         user_position_new = copy.deepcopy(user_position_old)
         user_position_new['pools'].remove(pool_data)
@@ -321,9 +320,9 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
     if pool_data['pool'] == 'double':
         new_pool = {
             'pool': 'double', 'tokens':
-                {pool.coin_one: pool.coin_one_amount, pool.coin_two: pool.coin_two_amount},
-            'target': [pool.coin_one_target, pool.coin_two_target],
-            'fluctuation': [pool.coin_one_fluctuation, pool.coin_two_fluctuation]
+                {pool.get_coin_one(): pool.get_coin_one_amount(), pool.get_coin_two(): pool.get_coin_two_amount()},
+            'target': [pool.get_coin_one_target(), pool.get_coin_two_target()],
+            'fluctuation': [pool.get_coin_one_fluctuation(), pool.get_coin_two_fluctuation()]
         }
 
         user_position_new = copy.deepcopy(user_position_old)

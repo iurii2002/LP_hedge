@@ -1,7 +1,7 @@
 import copy
 
 from LP_hedge.mongo.mongo_db import get_all_users_data, get_user_position, update_all_pools_in_db
-from LP_hedge.ftx.parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, calculate_token_amount_in_double_pool
+from LP_hedge.scripts.parse_ftx_data import get_price_ftx, calculate_token_amount_in_pool, calculate_token_amount_in_double_pool
 
 
 token_prices = {}
@@ -25,6 +25,7 @@ def update_all_user_pools() -> None:
                     new_pools.append(updated_pool)
             new_data['pools'] = new_pools
             update_all_pools_in_db(cid, data, new_data)
+            token_prices.clear()
         else:
             """don't need this for non-active users"""
             continue
@@ -43,7 +44,7 @@ def update_single_pool(pool):
                 first_token_price = get_price_ftx(token_one)
                 token_prices[token_one] = first_token_price
             except Exception as err:
-                print(err)
+                print('Something went wrong', err)
     else:
         first_token_price = token_prices[token_one]
     token_one_amount = round(calculate_token_amount_in_pool(pool_compound, first_token_price), 2)
@@ -61,23 +62,24 @@ def update_double_pool(pool):
     first_token_price = None
     second_token_price = None
     pool_compound = token_one_amount * token_two_amount
+
     if token_one not in token_prices:
         while first_token_price is None:
             try:
                 first_token_price = get_price_ftx(token_one)
                 token_prices[token_one] = first_token_price
             except Exception as err:
-                print(err)
+                print('Something went wrong', err)
     else:
         first_token_price = token_prices[token_one]
 
     if token_two not in token_prices:
         while second_token_price is None:
             try:
-                second_token_price = get_price_ftx(token_one)
-                token_prices[token_one] = second_token_price
+                second_token_price = get_price_ftx(token_two)
+                token_prices[token_two] = second_token_price
             except Exception as err:
-                print(err)
+                print('Something went wrong', err)
     else:
         second_token_price = token_prices[token_two]
 
