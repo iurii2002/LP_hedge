@@ -27,6 +27,9 @@ Subaccount: {self.subaccount}
     def set_subaccount(self, subaccount) -> None:
         self.subaccount = subaccount
 
+    def set_status(self, status) -> None:
+        self.status = status
+
     def get_api_s(self) -> str:
         return self.api_s
 

@@ -6,9 +6,10 @@ from telebot import types
 
 from LP_hedge.tg.config_tg import TOKEN
 from LP_hedge.tg.instances import User, Position
-from LP_hedge.mongo.mongo_db import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
+from LP_hedge.mongo.db_management import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
     return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
 from LP_hedge.scripts.parse_ftx_data import check_if_perp_market_on_ftx
+from LP_hedge.scripts.hedge_process import start_hedge_process, stop_hedge_process
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -159,14 +160,17 @@ def new_hedge_callback_inline(call):
             cid = call.message.chat.id
             if call.data == 'Start bot':
                 user = users_temp[cid]
-                user.status = 'active'
+                user.set_status('active')
                 update_user_db(user=user)
-                bot.send_message(cid, 'Bot started')
+                start_hedge_process(user)
                 users_temp.pop(cid)
+                bot.send_message(cid, 'Bot started')
+
             if call.data == 'Stop bot':
                 user = users_temp[cid]
-                user.status = 'passive'
-                update_user_db(user=users_temp[cid])
+                user.set_status('passive')
+                update_user_db(user=user)
+                stop_hedge_process(user)
                 users_temp.pop(cid)
                 bot.send_message(cid, 'Bot stopped')
 

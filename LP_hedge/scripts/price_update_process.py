@@ -10,7 +10,7 @@ logging.basicConfig(format=format_log, level=logging.INFO, filename="../../price
 i = 0
 
 # while True:
-while i < 60:
+while i < 5:
     print(i)
     update_all_user_pools()
     logging.info('Prices updated')
