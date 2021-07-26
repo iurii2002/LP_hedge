@@ -10,7 +10,8 @@ current_subprocess = []
 # current_subprocess[0].terminate() to kill the process
 
 if __name__ == "__main__":
-    price_update = subprocess.Popen(['python', 'LP_hedge/scripts/price_update_process.py'], shell=True, stdout=subprocess.PIPE)
+    price_update = subprocess.Popen(['python', 'scripts/price_update_process.py'], shell=True)
+    # , stdout=subprocess.PIPE
     current_subprocess.append(price_update)
 
     # for data in get_all_users_data():

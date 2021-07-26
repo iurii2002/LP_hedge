@@ -34,10 +34,8 @@ def update_all_user_pools() -> None:
 def update_single_pool(pool):
     token_one = list(pool['tokens'].keys())[0]
     token_two = 'USD'
-    token_one_amount = list(pool['tokens'].values())[0]
-    token_two_amount = list(pool['tokens'].values())[1]
     first_token_price = None
-    pool_compound = pool['product']
+    pool_product = pool['product']
     if token_one not in token_prices:
         while first_token_price is None:
             try:
@@ -47,21 +45,19 @@ def update_single_pool(pool):
                 print('Something went wrong', err)
     else:
         first_token_price = token_prices[token_one]
-    token_one_amount = round(calculate_token_amount_in_pool(pool_compound, first_token_price), 2)
+    token_one_amount = round(calculate_token_amount_in_pool(pool_product, first_token_price), 2)
     token_two_amount = round(token_one_amount * first_token_price, 2)
     updated_pool = {'pool': 'single', 'tokens': {token_one: token_one_amount, token_two: token_two_amount},
-                    'target': pool['target'], 'fluctuation': pool['fluctuation']}
+                    'product': pool_product, 'target': pool['target'], 'fluctuation': pool['fluctuation']}
     return updated_pool
 
 
 def update_double_pool(pool):
     token_one = list(pool['tokens'].keys())[0]
     token_two = list(pool['tokens'].keys())[1]
-    token_one_amount = list(pool['tokens'].values())[0]
-    token_two_amount = list(pool['tokens'].values())[1]
     first_token_price = None
     second_token_price = None
-    pool_compound = pool['product']
+    pool_product = pool['product']
 
     if token_one not in token_prices:
         while first_token_price is None:
@@ -84,12 +80,12 @@ def update_double_pool(pool):
         second_token_price = token_prices[token_two]
 
     token_one_amount, token_two_amount = \
-        calculate_token_amount_in_double_pool(pool_compound, first_token_price, second_token_price)
+        calculate_token_amount_in_double_pool(pool_product, first_token_price, second_token_price)
 
     token_one_amount = round(token_one_amount, 2)
     token_two_amount = round(token_two_amount, 2)
 
     updated_pool = {'pool': 'double', 'tokens': {token_one: token_one_amount, token_two: token_two_amount},
-                    'target': pool['target'], 'fluctuation': pool['fluctuation']}
+                    'product': pool_product, 'target': pool['target'], 'fluctuation': pool['fluctuation']}
 
     return updated_pool
