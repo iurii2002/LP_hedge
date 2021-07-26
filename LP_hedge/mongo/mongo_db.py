@@ -23,7 +23,8 @@ col_position = mydb["user position"]
         "position": {"FTM": 3550, "ETH": 1},
         "pools":
         [{"pool": "single", "tokens": {"FTM" : 2550, "USD": 1000}, "target": 1.15, "fluctuation": 10},
-        {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
+        {"pool": "double",  "tokens": {"FTM" : 1000, "ETH": 1}, "product": 1000.00, 
+        'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
         }
 """
 
@@ -76,7 +77,7 @@ def delete_user(cid: str) -> None:
 
 
 def get_user_position(cid: str) -> Dict:
-    myquery = {"cid": cid}
+    myquery = {"cid": int(cid)}
     if col_position.find_one(myquery) is not None:
         return col_position.find_one(myquery)
     else:
@@ -162,16 +163,18 @@ def add_hedge(position) -> None:
     if pool == 'single':
         """
         pool schema:
-        {'pool': 'single', 'tokens': {'STEP': 4500.0, 'USD': 1150.0}, 'target': 120.0, 'fluctuation': 15}
+        {'pool': 'single', 'tokens': {'STEP': 4500.0, 'USD': 1150.0}, 'product': 1000.00, 'target': 120.0, 'fluctuation': 15}
         """
         if len(get_user_position(position.cid)) > 0:
             """
             update hedge
             """
             new_pool = {"pool": pool, "tokens": {
-                position.coin_one: position.coin_one_amount,
-                position.coin_two: position.coin_two_amount
-            }, "target": position.coin_one_target, "fluctuation": position.coin_one_fluctuation}
+                position.coin_one: position.get_coin_one_amount(),
+                position.coin_two: position.get_coin_two_amount()
+            },
+                "product": position.get_coin_one_amount() * position.get_coin_two_amount(),
+                "target": position.coin_one_target, "fluctuation": position.coin_one_fluctuation}
             user_data = get_user_position(position.cid)
             new_user_data = copy.deepcopy(user_data)
             new_user_data['pools'].append(new_pool)
@@ -185,16 +188,18 @@ def add_hedge(position) -> None:
             new_position = {"cid": position.cid,
                             "position": {},
                             "pools": [{"pool": pool, "tokens": {
-                                position.coin_one: position.coin_one_amount,
-                                position.coin_two: position.coin_two_amount
-                            }, "target": position.coin_one_target, "fluctuation": position.coin_one_fluctuation}]
+                                position.coin_one: position.get_coin_one_amount(),
+                                position.coin_two: position.get_coin_two_amount()
+                            },
+                                "product": position.get_coin_one_amount() * position.get_coin_two_amount(),
+                                "target": position.coin_one_target, "fluctuation": position.coin_one_fluctuation}]
                             }
             col_position.insert_one(new_position)
             update_position_pivot_data(position.cid)
     elif pool == 'double':
         """
         pool schema:
-        {'pool': 'double', 'tokens': {'FTM': '5000', 'ETH': '1'}, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
+        {'pool': 'double', 'tokens': {'FTM': '5000', 'ETH': '1'}, 'product': 1000.00, 'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
         """
         if len(get_user_position(position.cid)) > 0:
             """
@@ -203,7 +208,9 @@ def add_hedge(position) -> None:
             new_pool = {"pool": pool, "tokens": {
                 position.get_coin_one(): position.get_coin_one_amount(),
                 position.get_coin_two(): position.get_coin_two_amount()
-            }, "target": [position.get_coin_one_target(), position.get_coin_two_target()],
+            },
+                        "product": position.get_coin_one_amount() * position.get_coin_two_amount(),
+                        "target": [position.get_coin_one_target(), position.get_coin_two_target()],
                         "fluctuation": [position.get_coin_one_fluctuation(), position.get_coin_two_fluctuation()]}
             user_data = get_user_position(position.cid)
             new_user_data = copy.deepcopy(user_data)
@@ -222,7 +229,9 @@ def add_hedge(position) -> None:
                             "pools": [{"pool": pool, "tokens": {
                                 position.get_coin_one(): position.get_coin_one_amount(),
                                 position.get_coin_two(): position.get_coin_two_amount()
-                            }, "target": [position.get_coin_one_target(), position.get_coin_two_target()],
+                            },
+                                       "product": position.get_coin_one_amount() * position.get_coin_two_amount(),
+                                       "target": [position.get_coin_one_target(), position.get_coin_two_target()],
                                        "fluctuation": [position.get_coin_one_fluctuation(), position.get_coin_two_fluctuation()]}]
                             }
             col_position.insert_one(new_position)
@@ -308,6 +317,7 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
         new_pool = {
             'pool': 'single', 'tokens':
                 {pool.get_coin_one(): pool.get_coin_one_amount(), pool.get_coin_two(): pool.get_coin_two_amount()},
+            "product": pool.get_coin_one_amount() * pool.get_coin_two_amount(),
             'target': pool.get_coin_one_target(), 'fluctuation': pool.get_coin_one_fluctuation()
         }
         user_position_new = copy.deepcopy(user_position_old)
@@ -321,6 +331,7 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
         new_pool = {
             'pool': 'double', 'tokens':
                 {pool.get_coin_one(): pool.get_coin_one_amount(), pool.get_coin_two(): pool.get_coin_two_amount()},
+            "product": pool.get_coin_one_amount() * pool.get_coin_two_amount(),
             'target': [pool.get_coin_one_target(), pool.get_coin_two_target()],
             'fluctuation': [pool.get_coin_one_fluctuation(), pool.get_coin_two_fluctuation()]
         }

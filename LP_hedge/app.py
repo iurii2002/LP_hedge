@@ -2,15 +2,8 @@ import datetime
 import re
 import json
 import logging
-import os
-import sys
 import decimal
 import time
-
-# todo move this file to the main folder
-
-BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_PATH)
 
 from LP_hedge.mongo.mongo_db import get_user_pivot_position
 from LP_hedge.tg.reporting import telegram_bot_sendtext
@@ -76,9 +69,6 @@ class MyBot(FtxClient):
     def rebalance_position(self, side, size, token):
         start_time = time.time()
         future_market = token + '-PERP'
-        print(self.short_positions)
-        print(self.pools_positions)
-        print(side, size, future_market)
 
         while (filled_size := sum([order['filledSize'] for order in
                                    self.get_order_history(future_market, start_time=start_time)])) < size:
@@ -101,7 +91,7 @@ class MyBot(FtxClient):
             # https://docs.google.com/spreadsheets/d/1tIegr-Y7flkOk5VJEbC6W9pN8CTkr0O4kFniR338FO0/edit#gid=1609882044
             try:
                 self.place_order(market=future_market, side=side, price=price, size=size, type='limit')
-                self.create_log(f'placed {side} order for {price}')
+                self.create_log(activity=f'placed {side} order for {price}', token=future_market.split('-')[0])
             except Exception as err:
                 if str(err) == 'Size too small':
                     r = -decimal.Decimal(str(size)).as_tuple().exponent
@@ -122,10 +112,10 @@ class MyBot(FtxClient):
         #     message = f'Liquidation price is {liquidation_price}, token price is {self.second_token_price}. Consider adding more liquidity to the account'
         #     telegram_bot_sendtext(message)
         #     return True
-
-    def create_log(self, activity, side=None, filled_size=None, token=None):
+    
+    # todo need update loging
+    def create_log(self, activity: str, side=None, filled_size=None, token=None):
         date = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        print(self.short_positions)
         log = {
             "date": date,
             "activity": activity,
@@ -135,8 +125,8 @@ class MyBot(FtxClient):
         }
         if re.match(r'place', activity):
             telegram_bot_sendtext(f'Rebalance {token} position: {side} {filled_size}')
-        log = json.dumps(log)
         print(log)
+        log = json.dumps(log)
         logging.info(log)
 
     # def send_common_log(self):

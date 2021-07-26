@@ -37,7 +37,7 @@ def update_single_pool(pool):
     token_one_amount = list(pool['tokens'].values())[0]
     token_two_amount = list(pool['tokens'].values())[1]
     first_token_price = None
-    pool_compound = token_one_amount * token_two_amount
+    pool_compound = pool['product']
     if token_one not in token_prices:
         while first_token_price is None:
             try:
@@ -61,7 +61,7 @@ def update_double_pool(pool):
     token_two_amount = list(pool['tokens'].values())[1]
     first_token_price = None
     second_token_price = None
-    pool_compound = token_one_amount * token_two_amount
+    pool_compound = pool['product']
 
     if token_one not in token_prices:
         while first_token_price is None:
