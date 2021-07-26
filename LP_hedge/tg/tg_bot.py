@@ -9,7 +9,7 @@ from LP_hedge.tg.instances import User, Position
 from LP_hedge.mongo.db_management import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
     return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
 from LP_hedge.scripts.parse_ftx_data import check_if_perp_market_on_ftx
-from LP_hedge.scripts.hedge_process import start_hedge_process, stop_hedge_process
+from LP_hedge.scripts.hedge_start_stop import start_hedge_process, stop_hedge_process
 
 bot = telebot.TeleBot(TOKEN)
 

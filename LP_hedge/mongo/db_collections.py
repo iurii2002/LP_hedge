@@ -23,12 +23,3 @@ col_position = mydb["user position"]
         'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
         }
 """
-
-col_current_processes = mydb["processes"]
-"""
-    current processes collection scheme = {
-        "price update": process1, 
-        "cid1": process2,
-        "cid2": process3,
-        }
-"""

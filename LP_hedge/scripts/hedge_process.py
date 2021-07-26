@@ -3,54 +3,30 @@ import logging
 import time
 
 from LP_hedge.app import MyBot
-# from LP_hedge.start_app import current_subprocess
+from LP_hedge.mongo.db_management import get_user_data
 
 
-def start_hedge_process(user):
-    print('line 10', user.get_api_s(), user.get_api_k(), user.get_subaccount(), user.get_cid(), user.get_status())
-    pass
+cid = sys.argv[1]
+
+format_log = "%(process)d-%(levelname)s-%(message)s"
+logging.basicConfig(format=format_log, level=logging.INFO, filename="test.txt", datefmt="%H:%M:%S")
+
+user_data = get_user_data(int(cid))
+# {'_id': ObjectId('60fe7aeec639e830117c470e'), 'cid': 1440189840, 'status': 'active',
+# 'api': {'api-key': 'mu9Zuxq9xJyUsKrqhk2igqYChvFgjTDA2hZ-G9O8',
+# 'api-secret': 'VmIcl_MGiVqlLFsqJFoHDtQBvQq5AOoqGvi2PTx6', 'sub-account': 'bot_test'}}
 
 
-def stop_hedge_process(user):
-    print('line 15', user.get_api_s(), user.get_api_k(), user.get_subaccount(), user.get_cid(), user.get_status())
-    pass
+bot = MyBot(api_key=user_data['api']['api-key'], api_secret=user_data['api']['api-secret'],
+            subaccount_name=user_data['api']['sub-account'], cid=cid)
 
 
+i = 0
 
-
-# api_key = sys.argv[1]
-# api_secret = sys.argv[2]
-# subaccount_name = sys.argv[3]
-# cid = int(sys.argv[4])
-
-# data = {'cid': 1440189840, 'status': 'active',
-#         'api': {'api-key': 'mu9Zuxq9xJyUsKrqhk2igqYChvFgjTDA2hZ-G9O8', 'api-secret': 'VmIcl_MGiVqlLFsqJFoHDtQBvQq5AOoqGvi2PTx6',
-#                 'sub-account': 'bot_test'}}
-#
-# api_key = data['api']['api-key']
-# api_secret = data['api']['api-secret']
-# subaccount_name = data['api']['sub-account']
-# cid = str(data['cid'])
-#
-#
-# bot = MyBot(api_key=api_key, api_secret=api_secret, subaccount_name=subaccount_name, cid=cid)
-#
-#
-# format_log = "%(asctime)s: %(message)s"
-# logging.basicConfig(format=format_log, level=logging.INFO, filename=f"log {cid}.txt",
-#                     datefmt="%H:%M:%S")
-#
-#
-# i = 0
-# time.sleep(1)
-#
-# # while True:
-# while i < 60:
-#     print(i)
-#     bot.check_positions()
-#     print('short_positions ', bot.short_positions)
-#     print('pools_positions ', bot.pools_positions)
-#     logging.info('short_positions ', bot.short_positions)
-#     logging.info('pools_positions ', bot.pools_positions)
-#     time.sleep(60)
-#     i += 1
+# while True:
+while i < 30:
+    print(i)
+    bot.update_short_position()
+    logging.info('Script executed')
+    time.sleep(60)
+    i += 1

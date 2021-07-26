@@ -2,7 +2,7 @@ import copy
 import json
 from typing import List, Dict
 
-from LP_hedge.mongo.db_collections import col_users, col_position, col_current_processes
+from LP_hedge.mongo.db_collections import col_users, col_position
 
 
 def check_if_user_exist_in_db(cid: str) -> bool:
@@ -34,7 +34,7 @@ def update_user_db(user) -> None:
         add_user(user)
 
 
-def get_user_data(cid: str) -> Dict:
+def get_user_data(cid) -> Dict:
     result = col_users.find_one({"cid": cid})
     return result
 
