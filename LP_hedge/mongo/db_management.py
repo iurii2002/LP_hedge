@@ -2,7 +2,7 @@ import copy
 import json
 from typing import List, Dict
 
-from LP_hedge.mongo.db_collections import col_users, col_position
+from LP_hedge.mongo.db_collections import col_users, col_position, col_processes
 
 
 def check_if_user_exist_in_db(cid: str) -> bool:
@@ -328,3 +328,31 @@ def update_all_pools_in_db(cid: str, old_position, new_position) -> None:
     col_position.update_one(old_position, newvalues)
 
     update_position_pivot_data(cid)
+
+
+def add_running_process_to_db(pid: int) -> None:
+    if check_if_process_exist_in_db(pid):
+        return
+    else:
+        new_process = {"pid": pid}
+        col_processes.insert_one(new_process)
+
+
+def get_all_running_process() -> List:
+    running_processes = []
+    for x in col_processes.find():
+        running_processes.append(x['pid'])
+    return running_processes
+
+
+def check_if_process_exist_in_db(pid: int) -> bool:
+    if pid in get_all_running_process():
+        return True
+    else:
+        return False
+
+
+def delete_process_from_db(pid) -> None:
+    if check_if_process_exist_in_db(pid):
+        process = col_processes.find_one({"pid": pid})
+        col_processes.delete_one(process)

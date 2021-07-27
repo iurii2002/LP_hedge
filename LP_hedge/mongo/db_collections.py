@@ -23,3 +23,11 @@ col_position = mydb["user position"]
         'target': [120.0, 150.0], 'fluctuation': [10.0, 15.0]}
         }
 """
+
+col_processes = mydb['running processes']
+"""
+    running processes collection scheme = {
+        "pid": 654541,
+        "pid": 4342,
+        "pid": 453453,
+"""
