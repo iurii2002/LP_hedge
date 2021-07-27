@@ -8,8 +8,12 @@ from LP_hedge.mongo.db_management import get_user_data
 
 cid = sys.argv[1]
 
-format_log = "%(process)d-%(levelname)s-%(message)s"
-logging.basicConfig(format=format_log, level=logging.INFO, filename="test.txt", datefmt="%H:%M:%S")
+log_file = f"logging/log_{cid}.txt"
+
+
+format_log = "%(asctime)s: %(process)d %(levelname)s %(message)s"
+logging.basicConfig(format=format_log, level=logging.INFO, filename=log_file, datefmt="%H:%M:%S")
+
 
 user_data = get_user_data(int(cid))
 # {'_id': ObjectId('60fe7aeec639e830117c470e'), 'cid': 1440189840, 'status': 'active',
@@ -20,13 +24,7 @@ user_data = get_user_data(int(cid))
 bot = MyBot(api_key=user_data['api']['api-key'], api_secret=user_data['api']['api-secret'],
             subaccount_name=user_data['api']['sub-account'], cid=cid)
 
-
-i = 0
-
-# while True:
-while i < 30:
-    print(i)
-    bot.update_short_position()
-    logging.info('Script executed')
+while True:
+    logging.info(f'Check positions for user {cid}')
+    bot.check_positions()
     time.sleep(60)
-    i += 1

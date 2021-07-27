@@ -7,7 +7,8 @@ import subprocess
 current_subprocess = {}
 
 if __name__ == "__main__":
-    price_update = subprocess.Popen(['python', 'scripts/price_update_process.py'], stdout=subprocess.PIPE)
+    price_update = subprocess.Popen(['python3', 'scripts/price_update_process.py'], stdout=subprocess.PIPE)
     current_subprocess['price update'] = price_update
 
-    start_bot()
+    tg_bot = subprocess.Popen(['python3', 'tg/tg_bot.py'], stdout=subprocess.PIPE)
+    current_subprocess['tg bot'] = tg_bot

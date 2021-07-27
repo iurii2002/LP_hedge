@@ -2,7 +2,7 @@ import subprocess
 
 
 def start_hedge_process(cid):
-    process = subprocess.Popen(['python', 'scripts/hedge_process.py', cid], shell=True)
+    process = subprocess.Popen(['python3', 'scripts/hedge_process.py', str(cid)], stdout=subprocess.PIPE)
 
 
 def stop_hedge_process(cid):

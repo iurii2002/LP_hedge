@@ -6,7 +6,8 @@ from telebot import types
 
 from LP_hedge.tg.config_tg import TOKEN
 from LP_hedge.tg.instances import User, Position
-from LP_hedge.mongo.db_management import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, print_user_position, \
+from LP_hedge.mongo.db_management import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, \
+    print_user_position, \
     return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
 from LP_hedge.scripts.parse_ftx_data import check_if_perp_market_on_ftx
 from LP_hedge.scripts.hedge_start_stop import start_hedge_process, stop_hedge_process
@@ -162,7 +163,7 @@ def new_hedge_callback_inline(call):
                 user = users_temp[cid]
                 user.set_status('active')
                 update_user_db(user=user)
-                start_hedge_process(user)
+                start_hedge_process(cid)
                 users_temp.pop(cid)
                 bot.send_message(cid, 'Bot started')
 
@@ -170,7 +171,7 @@ def new_hedge_callback_inline(call):
                 user = users_temp[cid]
                 user.set_status('passive')
                 update_user_db(user=user)
-                stop_hedge_process(user)
+                stop_hedge_process(cid)
                 users_temp.pop(cid)
                 bot.send_message(cid, 'Bot stopped')
 
@@ -357,7 +358,8 @@ def new_double_hedge_step_coin_two(message) -> None:
     position = user_position_temp[cid]
     user_input = message.text.upper()
     if not check_if_perp_market_on_ftx(user_input):
-        error_msg = bot.send_message(cid, f'There is no {user_input} perp market on FTX. Please use another one. Please use another one.')
+        error_msg = bot.send_message(cid,
+                                     f'There is no {user_input} perp market on FTX. Please use another one. Please use another one.')
         bot.register_next_step_handler(error_msg, new_double_hedge_step_coin_two)
         return
     if user_input == position.get_coin_one():
@@ -573,3 +575,6 @@ def check_coma_in_number(number: str) -> str:
 # RUN
 def start_bot() -> None:
     bot.polling(none_stop=True)
+
+
+start_bot()

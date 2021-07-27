@@ -54,6 +54,7 @@ class MyBot(FtxClient):
         not_needed_shorts = [k for k in self.short_positions.keys() if k not in self.pools_positions]
         if len(not_needed_shorts) != 0:
             for short in not_needed_shorts:
+                self.create_log(activity='Close unnecessary short')
                 self.rebalance_position('buy', self.short_positions[short], short)
 
     def check_if_need_rebalance(self, token):
@@ -82,12 +83,11 @@ class MyBot(FtxClient):
             self.cancel_orders(future_market, limit_orders=True)
             price = get_middle_price_for_futures_order(token)
             remained_size = size - filled_size
-            print(side, remained_size, future_market, price)
             self.prepare_order(side, remained_size, future_market, price)
             time.sleep(60)
 
         self.short_positions = self.update_short_position()
-        self.create_log('rebalance position', side=side, filled_size=filled_size, token=token)
+        self.create_log(activity='Position rebalanced', side=side, filled_size=filled_size, token=token)
 
     def prepare_order(self, side, size, future_market, price):
         if self.liquidation_soon():
@@ -98,7 +98,7 @@ class MyBot(FtxClient):
             # https://docs.google.com/spreadsheets/d/1tIegr-Y7flkOk5VJEbC6W9pN8CTkr0O4kFniR338FO0/edit#gid=1609882044
             try:
                 self.place_order(market=future_market, side=side, price=price, size=size, type='limit')
-                self.create_log(activity=f'placed {side} order for {price}', token=future_market.split('-')[0])
+                self.create_log(activity=f'Placed {side} order for {size} on {future_market.split("-")[0]} at {price}')
             except Exception as err:
                 if str(err) == 'Size too small':
                     r = -decimal.Decimal(str(size)).as_tuple().exponent
@@ -122,17 +122,27 @@ class MyBot(FtxClient):
     
     # todo need update loging
     def create_log(self, activity: str, side=None, filled_size=None, token=None):
-        date = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        log = {
-            "date": date,
-            "activity": activity,
-            f"{token} in pool:": self.pools_positions[token]['amount'],
-            "short position: ": self.short_positions[token],
-            "rebalance_corridor": f"{self.pools_positions[token]['floor']} - {self.pools_positions[token]['ceiling']}",
-        }
-        if re.match(r'place', activity):
-            telegram_bot_sendtext(f'Rebalance {token} position: {side} {filled_size}')
-        print(log)
+
+        log_file = f"logging/log_{self.cid}.txt"
+
+        format_log = "%(asctime)s: %(message)s"
+        logging.basicConfig(format=format_log, level=logging.INFO, filename=log_file, datefmt="%H:%M:%S")
+
+        if filled_size:
+            log = {
+                "activity": activity,
+                f"{token} in pool:": self.pools_positions[token]['amount'],
+                "short position: ": self.short_positions[token],
+                "rebalance_corridor": f"{self.pools_positions[token]['floor']} - {self.pools_positions[token]['ceiling']}",
+            }
+
+        else:
+            log = {
+                "activity": activity,
+            }
+
+        if re.match(r'Placed', activity):
+            telegram_bot_sendtext(f'{token} position rebalanced: {side} {filled_size}')
         log = json.dumps(log)
         logging.info(log)
 
@@ -142,11 +152,3 @@ class MyBot(FtxClient):
     #               f'token in pool: {round(self.second_token_amount_pool, 0)}. ' \
     #               f'Coverage: {coverage}. Target: {1 + (self.target - self.rebalance) / 100} - {1 + (self.target + self.rebalance) / 100}'
     #     telegram_bot_sendtext(message)
-
-# 1. Get Token Amount in Pool
-# 2. Get the short position
-# 3. Compare tokens to position
-# 4. If position deviates from the tokens, correct it
-# 5. Checks to not enter position if it will be liquidated soon
-# 6. Notification tg
-# 7. Logs
