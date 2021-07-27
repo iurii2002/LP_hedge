@@ -27,7 +27,7 @@ col_position = mydb["user position"]
 col_processes = mydb['running processes']
 """
     running processes collection scheme = {
-        "pid": 654541,
-        "pid": 4342,
-        "pid": 453453,
+        {"pid": 654541, "name": "name"},
+        {"pid": 4342, "name": "name"},
+        {"pid": 453453, "name": "name"},
 """

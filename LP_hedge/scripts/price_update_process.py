@@ -11,8 +11,7 @@ i = 0
 
 # while True:
 while i < 5:
-    print(i)
     update_all_user_pools()
-    logging.info('Prices updated')
+    logging.info('Pools and prices update')
     time.sleep(60)
     i += 1

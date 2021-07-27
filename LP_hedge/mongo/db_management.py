@@ -330,18 +330,16 @@ def update_all_pools_in_db(cid: str, old_position, new_position) -> None:
     update_position_pivot_data(cid)
 
 
-def add_running_process_to_db(pid: int) -> None:
+def add_running_process_to_db(pid: int, name: str) -> None:
     if check_if_process_exist_in_db(pid):
         return
     else:
-        new_process = {"pid": pid}
+        new_process = {'pid': pid, 'name': name}
         col_processes.insert_one(new_process)
 
 
 def get_all_running_process() -> List:
-    running_processes = []
-    for x in col_processes.find():
-        running_processes.append(x['pid'])
+    running_processes = [process['pid'] for process in col_processes.find()]
     return running_processes
 
 
@@ -352,7 +350,15 @@ def check_if_process_exist_in_db(pid: int) -> bool:
         return False
 
 
-def delete_process_from_db(pid) -> None:
+def get_process_pid_by_name(name: str):
+    myquery = {'name': name}
+    if response := col_processes.find_one(myquery):
+        return response['pid']
+    else:
+        return None
+
+
+def delete_process_from_db(pid: int) -> None:
     if check_if_process_exist_in_db(pid):
         process = col_processes.find_one({"pid": pid})
         col_processes.delete_one(process)
