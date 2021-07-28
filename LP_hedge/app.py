@@ -120,7 +120,6 @@ class MyBot(FtxClient):
         #     telegram_bot_sendtext(message)
         #     return True
     
-    # todo need update loging
     def create_log(self, activity: str, side=None, filled_size=None, token=None):
 
         log_file = f"logging/log_{self.cid}.txt"
@@ -142,7 +141,7 @@ class MyBot(FtxClient):
             }
 
         if re.match(r'Placed', activity):
-            telegram_bot_sendtext(f'{token} position rebalanced: {side} {filled_size}')
+            telegram_bot_sendtext(activity)
         log = json.dumps(log)
         logging.info(log)
 

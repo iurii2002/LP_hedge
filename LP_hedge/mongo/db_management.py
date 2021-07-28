@@ -40,10 +40,11 @@ def get_user_data(cid) -> Dict:
 
 
 def get_all_users_data() -> List[Dict]:
-    users = []
-    for x in col_users.find():
-        users.append(x)
-    return users
+    return [user for user in col_users.find()]
+
+
+def get_all_active_users() -> List[Dict]:
+    return [user for user in col_users.find() if user['status'] == 'active']
 
 
 def delete_user(cid: str) -> None:
