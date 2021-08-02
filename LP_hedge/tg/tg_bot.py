@@ -7,15 +7,18 @@ from telebot import types
 from LP_hedge.tg.config_tg import TOKEN
 from LP_hedge.tg.instances import User, Position
 from LP_hedge.mongo.db_management import update_user_db, check_if_user_exist_in_db, delete_user, add_hedge, \
-    print_user_position, return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data
+    print_user_pools, return_specific_pool_data, delete_pool, edit_pool_in_db, get_user_data, print_user_pivot_data
 from LP_hedge.scripts.parse_ftx_data import check_if_perp_market_on_ftx
 from LP_hedge.scripts.hedge_start_stop import start_hedge_process, stop_hedge_process
+from LP_hedge.ftx.check_API_correctness import check_ftx_api
 
 bot = telebot.TeleBot(TOKEN)
 
 users_temp = {}
 user_position_temp = {}
 user_pool_temp = {}
+
+main_menu_buttons = ['🔥 Total Data', '🐋 Account', '📖 Current Pools', '📝 Add New Pool', '🚦 Start/Stop Bot', 'ℹ Help']
 
 
 @bot.message_handler(commands=['start'])
@@ -44,19 +47,17 @@ def total_data_button(message) -> None:
     cid = message.chat.id
 
     if not check_if_user_exist_in_db(cid):
-        bot.send_message(cid, 'Register user before you can perform this action')
+        bot.send_message(cid, 'Register account before you can perform this action')
         return
 
-    bot.send_message(cid, 'this section is not ready yet')
-
-
-#     todo add this section
+    user_position = print_user_pivot_data(cid)
+    bot.send_message(cid, user_position)
 
 
 @bot.message_handler(regexp='🐋 Account')
 def account_button(message) -> None:
     cid = message.chat.id
-    if user_data := check_if_user_exist_in_db(cid):
+    if user_data := get_user_data(cid):
         """Update existing user"""
         user = User(cid, api_s=user_data["api"]["api-secret"], api_k=user_data["api"]["api-key"],
                     subaccount=user_data["api"]["sub-account"])
@@ -80,10 +81,10 @@ def current_hedge_button(message) -> None:
     cid = message.chat.id
 
     if not check_if_user_exist_in_db(cid):
-        bot.send_message(cid, 'Register user before you can perform this action')
+        bot.send_message(cid, 'Register account before you can perform this action')
         return
 
-    user_pools = print_user_position(cid)
+    user_pools = print_user_pools(cid)
     if user_pools[1] == 0:
         """
         Number of pools = 0
@@ -105,7 +106,7 @@ def add_new_hedge_button(message) -> None:
     cid = message.chat.id
 
     if not check_if_user_exist_in_db(cid):
-        bot.send_message(cid, 'Register user before you can perform this action')
+        bot.send_message(cid, 'Register account before you can perform this action')
         return
 
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -120,7 +121,7 @@ def stop_bot_button(message) -> None:
     cid = message.chat.id
 
     if not check_if_user_exist_in_db(cid):
-        bot.send_message(cid, 'Register user before you can perform this action')
+        bot.send_message(cid, 'Register account before you can perform this action')
         return
 
     data = get_user_data(cid)
@@ -188,7 +189,7 @@ def registration_callback_inline(call) -> None:
         if call.message:
             cid = call.message.chat.id
             if call.data == 'register account':
-                # todo add API check and maybe frequency of reporting
+                # todo frequency of reporting
                 user = User(cid)
                 users_temp[cid] = user
                 msg_api_key = bot.send_message(cid, 'Provide your FTX api key :')
@@ -205,9 +206,17 @@ def registration_callback_inline(call) -> None:
                 users_temp.pop(cid)
 
             elif call.data == 'save account':
-                update_user_db(user=users_temp[cid])
-                bot.send_message(cid, 'Account saved!')
-                users_temp.pop(cid)
+                user = users_temp[cid]
+                if check_ftx_api(api_k=user.get_api_k(), api_s=user.get_api_s(), sub_a=user.get_subaccount()):
+                    update_user_db(user=users_temp[cid])
+                    users_temp.pop(cid)
+                    bot.send_message(cid, 'Account saved!')
+                else:
+                    users_temp.pop(cid)
+                    markup = types.InlineKeyboardMarkup(row_width=1)
+                    item1 = types.InlineKeyboardButton("Register", callback_data='register account')
+                    markup.add(item1)
+                    bot.send_message(cid, 'API data is incorrect. Please try again 👇', reply_markup=markup)
 
     except Exception as e:
         print(repr(e))
@@ -217,7 +226,6 @@ def registration_step_api_key(message) -> None:
     cid = message.chat.id
     user = users_temp[cid]
     user.set_api_k(message.text)
-    # todo add API check
     msg_api_secret = bot.send_message(cid, 'Provide your FTX api secret :')
     bot.register_next_step_handler(msg_api_secret, registration_step_api_secret)
 
@@ -226,7 +234,6 @@ def registration_step_api_secret(message) -> None:
     cid = message.chat.id
     user = users_temp[cid]
     user.set_api_s(message.text)
-    # todo add API check
     msg_subaccount = bot.send_message(cid, 'Provide your FTX subaccount name:')
     bot.register_next_step_handler(msg_subaccount, registration_step_subaccount)
 

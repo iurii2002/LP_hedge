@@ -1,5 +1,7 @@
 import requests
 
+# todo correct reporting
+
 
 def telegram_bot_sendtext(bot_message):
     bot_token = '1635932722:AAEUIQ27kTpUKF_57FJtAeTS3cnkmaxDa3Y'

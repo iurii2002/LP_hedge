@@ -2,10 +2,10 @@ import copy
 import json
 from typing import List, Dict
 
-from LP_hedge.mongo.db_collections import col_users, col_position, col_processes
+from LP_hedge.mongo.db_collections import col_users, col_position, col_processes, col_shorts
 
 
-def check_if_user_exist_in_db(cid: str) -> bool:
+def check_if_user_exist_in_db(cid: int) -> bool:
     myquery = {"cid": cid}
     if col_users.find_one(myquery) is not None:
         return col_users.find_one(myquery)
@@ -47,21 +47,21 @@ def get_all_active_users() -> List[Dict]:
     return [user for user in col_users.find() if user['status'] == 'active']
 
 
-def delete_user(cid: str) -> None:
+def delete_user(cid: int) -> None:
     if check_if_user_exist_in_db(cid):
         user = col_users.find_one({"cid": cid})
         col_users.delete_one(user)
 
 
-def get_user_position(cid: str) -> Dict:
-    myquery = {"cid": int(cid)}
+def get_user_position(cid: int) -> Dict:
+    myquery = {"cid": cid}
     if col_position.find_one(myquery) is not None:
         return col_position.find_one(myquery)
     else:
         return {}
 
 
-def get_user_pivot_position(cid: str) -> Dict:
+def get_user_pivot_position(cid: int) -> Dict:
     full_position = get_user_position(cid)
     if full_position:
         return full_position['position']
@@ -69,16 +69,38 @@ def get_user_pivot_position(cid: str) -> Dict:
         return {}
 
 
-def print_user_position(cid: str) -> (str, int):
+def print_user_pivot_data(cid: int):
+    shorts = get_shorts_from_db(cid) if get_shorts_from_db(cid) else {}
+    position = get_user_position(cid)['position'] if get_user_position(cid)['position'] else {}
+
+    user_total_data = ''
+    pivot_data = {**shorts, **position}
+    for coin in pivot_data.keys():
+        try:
+            shorts_data = shorts[coin]
+        except KeyError:
+            shorts_data = 'None'
+        try:
+            position_data = position[coin]
+        except KeyError:
+            position_data = 'None'
+
+        data = f"\n{coin.ljust(5)} \nShort: {shorts_data}. \nPosition: {position_data} \n"
+        user_total_data += data
+
+    message = f"""
+You current data:{user_total_data}
+        """
+
+    return message
+
+
+def print_user_pools(cid: int) -> (str, int):
     number_of_pools = 0
 
     user_data = get_user_position(cid)
     if user_data == {}:
         return "", number_of_pools
-
-    user_position = ''
-    for coin, position in user_data['position'].items():
-        user_position += f"{coin}: {position};  \n"
 
     pools = ""
     for pool in user_data['pools']:
@@ -94,16 +116,13 @@ def print_user_position(cid: str) -> (str, int):
                    f'Target {coin_two}: ' + str(pool['target'][1]) + "%" + ' +- ' + str(pool['fluctuation'][1]) + "%\n\n"
             pools += text
     message = f"""
-Total in pools: 
-{user_position}
-    
 Pools:
 {pools}
     """
     return message, number_of_pools
 
 
-def return_specific_pool_data(cid: str, pool: int) -> (str, str):
+def return_specific_pool_data(cid: int, pool: int) -> (str, str):
     pool = get_user_position(cid)["pools"][pool - 1]
     pool_data = json.dumps(pool)
     coin_one, coin_two = list(pool['tokens'].keys())[0], list(pool['tokens'].keys())[1]
@@ -120,7 +139,7 @@ def return_specific_pool_data(cid: str, pool: int) -> (str, str):
     return text, pool_data
 
 
-def delete_pool(cid: str, pool: int) -> None:
+def delete_pool(cid: int, pool: int) -> None:
     user_position_old = get_user_position(cid)
     pool_data = user_position_old["pools"][pool - 1]
     user_position_new = copy.deepcopy(user_position_old)
@@ -215,7 +234,7 @@ def add_hedge(position) -> None:
             update_position_pivot_data(position.get_cid())
 
 
-def update_position_pivot_data(cid: str) -> None:
+def update_position_pivot_data(cid: int) -> None:
     """
     This data will be updated based on the new pools -> "position":
         {'STEP': {'amount': 4456.39, 'floor': -401.0751, 'ceiling': 490.2029},
@@ -287,7 +306,7 @@ def update_position_pivot_data(cid: str) -> None:
     col_position.update_one(data, newvalues)
 
 
-def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
+def edit_pool_in_db(cid: int, pool_nb: int, pool) -> None:
     user_position_old = get_user_position(cid)
     pool_data = user_position_old["pools"][pool_nb - 1]
     if pool_data['pool'] == 'single':
@@ -324,7 +343,7 @@ def edit_pool_in_db(cid: str, pool_nb: int, pool) -> None:
     update_position_pivot_data(cid)
 
 
-def update_all_pools_in_db(cid: str, old_position, new_position) -> None:
+def update_all_pools_in_db(cid: int, old_position, new_position) -> None:
     newvalues = {"$set": new_position}
     col_position.update_one(old_position, newvalues)
 
@@ -363,3 +382,41 @@ def delete_process_from_db(pid: int) -> None:
     if check_if_process_exist_in_db(pid):
         process = col_processes.find_one({"pid": pid})
         col_processes.delete_one(process)
+
+
+def get_shorts_from_db(cid: int) -> dict or None:
+    myquery = {'cid': cid}
+    if response := col_shorts.find_one(myquery):
+        return response['shorts']
+    else:
+        return None
+
+
+def check_if_user_shorts_exist_in_db(cid: int) -> bool:
+    if get_shorts_from_db(cid):
+        return True
+    else:
+        return False
+
+
+def add_new_shorts_to_db(cid: int, shorts: dict) -> None:
+    new_shorts = {'cid': cid, 'shorts': shorts}
+    col_shorts.insert_one(new_shorts)
+
+
+def correct_current_shorts_in_db(cid: int, new_shorts: dict, old_shorts: dict) -> None:
+    new_shorts = {"$set": {"cid": cid, "shorts": new_shorts}}
+    col_shorts.update_one(old_shorts, new_shorts)
+
+
+def update_shorts_in_db(cid: int, new_shorts: dict) -> None:
+    if current_shorts := get_shorts_from_db(cid):
+        correct_current_shorts_in_db(cid, new_shorts, current_shorts)
+    else:
+        add_new_shorts_to_db(cid, new_shorts)
+
+
+def delete_shorts_from_db(cid: int) -> None:
+    if current_shorts := get_shorts_from_db(cid):
+        user_data = {'cid': cid, 'shorts': current_shorts}
+        col_shorts.delete_one(user_data)

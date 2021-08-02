@@ -31,3 +31,11 @@ col_processes = mydb['running processes']
         {"pid": 4342, "name": "name"},
         {"pid": 453453, "name": "name"},
 """
+
+col_shorts = mydb['current shorts']
+"""
+    current shorts collection scheme = {
+        "cid": 47805431514,
+        "shorts": {'BNB': 11.0, 'FTM': 13562.0, 'STEP': 6462.9}
+"""
+

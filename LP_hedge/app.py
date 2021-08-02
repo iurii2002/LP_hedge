@@ -5,7 +5,7 @@ import logging
 import decimal
 import time
 
-from LP_hedge.mongo.db_management import get_user_pivot_position
+from LP_hedge.mongo.db_management import get_user_pivot_position, update_shorts_in_db
 from LP_hedge.tg.reporting import telegram_bot_sendtext
 from LP_hedge.scripts.parse_ftx_data import get_middle_price_for_futures_order
 from LP_hedge.ftx.rest_client import FtxClient
@@ -13,7 +13,7 @@ from LP_hedge.ftx.rest_client import FtxClient
 
 class MyBot(FtxClient):
 
-    def __init__(self, api_key, api_secret, subaccount_name, cid):
+    def __init__(self, api_key: str, api_secret: str, subaccount_name: str, cid: int):
         super().__init__(api_key, api_secret, subaccount_name)
         self.cid = cid
 
@@ -38,6 +38,9 @@ class MyBot(FtxClient):
                          for position in self.short_positions_data if position['netSize'] != 0.0}
         except TypeError as err:
             positions = {}
+
+        update_shorts_in_db(self.cid, positions)
+
         return positions
 
     def check_positions(self):
@@ -109,17 +112,24 @@ class MyBot(FtxClient):
                     print(err)
 
     def liquidation_soon(self):
-        return False
-        # try:
-        #     liquidation_price = self.get_position(self.future_market)['estimatedLiquidationPrice']
-        # except TypeError:
-        #     liquidation_price = float('inf')
-        # if liquidation_price < self.second_token_price * 3:  # todo liquidation treshold??
-        #     self.create_log('liquidation soon')
-        #     message = f'Liquidation price is {liquidation_price}, token price is {self.second_token_price}. Consider adding more liquidity to the account'
-        #     telegram_bot_sendtext(message)
-        #     return True
-    
+        pass
+
+    def check_current_position_liquidation(self) -> None:
+        self.update_short_position()
+        shorts = self.short_positions_data
+        for short in shorts:
+            if short['netSize'] == 0:
+                continue
+            try:
+                liquidation_price = short['estimatedLiquidationPrice']
+            except TypeError:
+                liquidation_price = float('inf')
+            current_price = short['cost']/short['netSize']
+            if liquidation_price < current_price * 3:  # todo liquidation treshold??
+                message = f'Market: {short["future"]}. Liquidation price is {liquidation_price}, token price is ' \
+                          f'{current_price}. Consider adding more liquidity to the account'
+                telegram_bot_sendtext(message)
+
     def create_log(self, activity: str, side=None, filled_size=None, token=None):
 
         log_file = f"logging/log_{self.cid}.txt"
@@ -144,10 +154,3 @@ class MyBot(FtxClient):
             telegram_bot_sendtext(activity)
         log = json.dumps(log)
         logging.info(log)
-
-    # def send_common_log(self):
-    #     coverage = round(self.short_position / self.second_token_amount_pool, 2)
-    #     message = f'{self.second_token} market. Short position: {round(self.short_position, 0)}, ' \
-    #               f'token in pool: {round(self.second_token_amount_pool, 0)}. ' \
-    #               f'Coverage: {coverage}. Target: {1 + (self.target - self.rebalance) / 100} - {1 + (self.target + self.rebalance) / 100}'
-    #     telegram_bot_sendtext(message)
